@@ -3,3 +3,5 @@
 .env.bak
 .drafts
 .privateMakefile
+.cursorignore
+.cursorrules
