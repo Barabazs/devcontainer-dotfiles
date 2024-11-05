@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Based on the Makefile from https://kyleshevlin.com/make-checkpoint/
+
+if [ "$1" = "--help" ]; then
+    echo "usage: checkpoint"
+    echo "Create a checkpoint commit. This is useful for saving your work in progress."
+    echo "Note: You must be on a feature branch to create a checkpoint."
+    exit 0
+else
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "ERROR: You are not in a git repository."
+        exit 1
+    fi
+
+    current_branch=$(git branch --show-current)
+
+    if [ "$current_branch" = "master" ] || [ "$current_branch" = "main" ]; then
+        echo "ERROR: You are on the main branch. Please checkout a feature branch to create a checkpoint."
+        exit 1
+    fi
+    git add -A &&
+        git commit -m "checkpoint at $(date '+%Y-%m-%dT%H:%M:%S%z')" &&
+        echo "Checkpoint created"
+fi
