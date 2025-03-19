@@ -19,3 +19,6 @@ EOF
 
 # chmod the scripts
 chmod +x ~/.local/scripts/*
+
+# Install git-delta
+./install-git-delta.sh
