@@ -7,7 +7,7 @@ cp gitignore ~/.gitignore
 cp bash_aliases ~/.bash_aliases
 
 # Copy the scripts
-mkdir ~/.local
+mkdir -p ~/.local
 cp -r scripts ~/.local/scripts
 
 # Append to .profile

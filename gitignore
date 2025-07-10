@@ -5,3 +5,5 @@
 .privateMakefile
 .cursorignore
 .cursorrules
+.pnpm-store
+node_modules
