@@ -8,7 +8,7 @@ cp bash_aliases ~/.bash_aliases
 
 # Copy the scripts
 mkdir -p ~/.local
-cp -r scripts ~/.local/scripts
+cp -r scripts ~/.local/
 
 # Append to .profile
 cat <<'EOF' >>~/.profile
