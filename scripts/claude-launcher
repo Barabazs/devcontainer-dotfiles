@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Script to ask whether to run claude normally or with --dangerously-skip-permissions
+if ! command -v claude >/dev/null 2>&1; then
+    echo "Error: 'claude' command not found" >&2
+    exit 1
+fi
+
+echo "How would you like to run Claude?"
+echo "1) Safe mode (default)"
+echo "2) YOLO mode (--dangerously-skip-permissions)"
+
+while true; do
+    printf "Enter choice [1/2]: "
+    read -r choice
+    
+    case $choice in
+        1|"")
+            echo "Running Claude in safe mode..."
+            command claude "$@"
+            break
+            ;;
+        2)
+            echo "Running Claude in YOLO mode..."
+            command claude --dangerously-skip-permissions "$@"
+            break
+            ;;
+        *)
+            echo "Please enter 1 or 2"
+            ;;
+    esac
+done

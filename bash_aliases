@@ -67,3 +67,6 @@ alias undo-commit="git reset --soft HEAD~1"
 alias gundo=undo-commit
 __git_complete gundo _git_reset
 __git_complete undo-commit _git_reset
+ 
+alias yolo-claude="\claude --dangerously-skip-permissions"
+alias claude="claude-launcher"
