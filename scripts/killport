@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+if [[ $# -ne 1 ]]; then
+    echo "Usage: killport <port>"
+    echo "Kills all processes listening on the given port"
+    exit 1
+fi
+
+port=$1
+pids=$(lsof -i :${port} | grep LISTEN | awk '{print $2}' | sort -u | tr '\n' ' ')
+
+if [[ -n ${pids} ]]; then
+    echo "Killing process(es) '${pids}' on port ${port}"
+    echo ${pids} | xargs kill -9
+else
+    echo "No processes found listening on port ${port}"
+fi
