@@ -1,0 +1,42 @@
+#!/bin/bash
+
+if [ "$1" = "--help" ] || [[ $# -ne 3 ]]; then
+    echo "Reply to a GitHub PR review comment with automatic signature"
+    echo "Usage: $0 <comment_id> <pr_number> <reply_text>"
+    echo ""
+    echo "Arguments:"
+    echo "  comment_id   ID of the original review comment to reply to"
+    echo "  pr_number    Pull request number"
+    echo "  reply_text   Text content of your reply"
+    echo ""
+    echo "Note: This replies to inline code review comments, not general PR discussion comments."
+    exit 0
+fi
+
+# Get original comment details
+ORIGINAL=$(gh api repos/:owner/:repo/pulls/comments/$1)
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to fetch original comment" >&2
+    exit 1
+fi
+
+COMMIT_ID=$(echo "$ORIGINAL" | jq -r '.commit_id')
+FILE_PATH=$(echo "$ORIGINAL" | jq -r '.path')  
+LINE=$(echo "$ORIGINAL" | jq -r '.line')
+
+# Reply to the comment
+if gh api repos/:owner/:repo/pulls/$2/comments \
+    -f body="$3
+
+---🤖 Generated with https://claude.ai/code" \
+    -f commit_id="$COMMIT_ID" \
+    -f path="$FILE_PATH" \
+    -F line="$LINE" \
+    -f side="RIGHT" \
+    -F in_reply_to=$1 > /dev/null 2>&1; then
+    echo "Reply posted successfully"
+    exit 0
+else
+    echo "Error: Failed to post reply" >&2
+    exit 1
+fi
