@@ -7,3 +7,4 @@
 .cursorrules
 .pnpm-store
 node_modules
+.cloudflared
