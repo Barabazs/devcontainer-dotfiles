@@ -15,6 +15,8 @@ cat <<'EOF' >>~/.profile
 if [ -d "${HOME}/.local/scripts" ] ; then
     PATH="${HOME}/.local/scripts:$PATH"
 fi
+
+export TZ=Europe/Berlin
 EOF
 
 # chmod the scripts
