@@ -14,6 +14,7 @@ cp -r scripts ~/.local/
 
 # Install agent-tools (vendored CLI tools for Claude Code)
 # Source: https://github.com/Barabazs/agent-tools (forked from badlogic/agent-tools)
+cd "$SCRIPT_DIR" && git submodule update --init --recursive 2>/dev/null
 mkdir -p ~/.local/agent-tools
 
 for tool in brave-search browser-tools search-tools; do
