@@ -1,0 +1,3 @@
+[submodule "agent-tools"]
+	path = agent-tools
+	url = https://github.com/Barabazs/agent-tools.git

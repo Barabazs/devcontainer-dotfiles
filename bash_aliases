@@ -73,3 +73,4 @@ alias claude="claude-launcher"
 
 alias list-screenshots="find  ~/claude-screenshots -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.jpeg" \) -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2"
 alias last-screenshot="list-screenshots | head -n 1"
+
