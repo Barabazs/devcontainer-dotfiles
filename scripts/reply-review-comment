@@ -26,9 +26,7 @@ LINE=$(echo "$ORIGINAL" | jq -r '.line')
 
 # Reply to the comment
 if gh api repos/:owner/:repo/pulls/$2/comments \
-    -f body="$3
-
----🤖 Generated with https://claude.ai/code" \
+    -f body="$3" \
     -f commit_id="$COMMIT_ID" \
     -f path="$FILE_PATH" \
     -F line="$LINE" \
