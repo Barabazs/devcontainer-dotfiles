@@ -1,0 +1,577 @@
+#!/usr/bin/env bash
+#
+# cwt - Claude Worktree Tool
+# A git worktree wrapper optimized for Claude Code workflows
+#
+# Source this script or wrap it in a shell function for auto-cd:
+#   cwt() { source /path/to/cwt "$@"; }
+
+set -euo pipefail
+
+# Colors
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+CLEAR="\033[0m"
+
+# Flags
+VERBOSE=
+QUIET=
+FORCE=
+DRY_RUN=
+BASE_BRANCH=
+
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+usage() {
+    cat <<'EOF'
+cwt - Claude Worktree Tool
+
+USAGE:
+    cwt <branch> [-b <base>] [-f] [-v] [-q] [--dry-run]
+    cwt ls
+    cwt rm <branch> [<branch>...]
+    cwt -h|--help
+
+COMMANDS:
+    <branch>    Create or navigate to a worktree for the given branch
+    ls          List all worktrees (wraps git worktree list)
+    rm          Remove worktree(s) and delete associated branch(es)
+
+OPTIONS:
+    -b <base>   Base branch for new branches (default: current HEAD)
+    -f, --force Proceed even if working directory is dirty
+    -v, --verbose   Enable verbose output
+    -q, --quiet     Suppress all non-error output
+    --dry-run       Preview actions without executing
+    -h, --help      Show this help message
+
+EXAMPLES:
+    cwt feature-login           # Create/navigate to worktree
+    cwt feature-signup -b main  # New branch from main
+    cwt feature-test --dry-run  # Preview what would happen
+    cwt rm feature-login        # Remove worktree and branch
+
+WORKTREE LOCATION:
+    Worktrees are created in: ~/.worktrees/<repo-name>/<branch>/
+
+    Override per-repo with:
+        git config worktree.basedir /custom/path
+
+CONFIGURATION:
+    Override default files to copy via git config:
+        git config --add worktree.untrackedfiles ".env"
+        git config --add worktree.untrackedfiles ".secrets"
+
+    Default files: .env, .env.local, .envrc
+
+SHELL INTEGRATION:
+    Add to .bashrc or .zshrc:
+        cwt() { source /path/to/cwt "$@"; }
+EOF
+    # Exit without killing the shell if sourced
+    kill -INT $$
+}
+
+die() {
+    printf '%b%s%b\n' "$RED" "$1" "$CLEAR" >&2
+    kill -INT $$
+}
+
+warn() {
+    if [[ -z "$QUIET" ]]; then
+        printf '%b%s%b\n' "$YELLOW" "$1" "$CLEAR" >&2
+    fi
+}
+
+info() {
+    if [[ -z "$QUIET" ]]; then
+        printf '%b%s%b\n' "$GREEN" "$1" "$CLEAR"
+    fi
+}
+
+# Copy with copy-on-write support
+# Try macOS -c, then GNU --reflink, then regular copy
+cp_cow() {
+    local src="$1"
+    local dest="$2"
+
+    if [[ -n "$DRY_RUN" ]]; then
+        warn "[dry-run] Would copy: $src -> $dest"
+        return 0
+    fi
+
+    # Use /bin/cp to avoid user aliases
+    if /bin/cp -Rc "$src" "$dest" 2>/dev/null; then
+        return 0
+    elif /bin/cp -R --reflink=auto "$src" "$dest" 2>/dev/null; then
+        return 0
+    elif /bin/cp -R "$src" "$dest" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# ============================================================================
+# File Discovery
+# ============================================================================
+
+# Get list of untracked files to copy from git config or defaults
+get_untracked_files_pattern() {
+    local default_patterns='^(\.env|\.env\.local|\.envrc)$'
+
+    if git config --get-all worktree.untrackedfiles > /dev/null 2>&1; then
+        local custom_patterns
+        custom_patterns=$(git config --get-all worktree.untrackedfiles | tr '\n' '|' | sed 's/|$//')
+        echo "^($custom_patterns)$"
+    else
+        echo "$default_patterns"
+    fi
+}
+
+# Find files using fd or find fallback
+find_files() {
+    local pattern="$1"
+    local dir="${2:-.}"
+
+    if command -v fd &> /dev/null; then
+        fd -u "$pattern" -E node_modules "$dir" 2>/dev/null
+    else
+        # Fallback to find
+        find "$dir" -type f \( -name ".env" -o -name ".env.local" -o -name ".envrc" \) \
+            -not -path "*/node_modules/*" 2>/dev/null
+    fi
+}
+
+# ============================================================================
+# Worktree Location
+# ============================================================================
+
+# Get the base directory for worktrees
+# Priority: git config worktree.basedir > ~/.worktrees/<repo-name>
+get_worktree_basedir() {
+    local custom_basedir
+    custom_basedir=$(git config worktree.basedir 2>/dev/null || true)
+
+    if [[ -n "$custom_basedir" ]]; then
+        echo "$custom_basedir"
+    else
+        local repo_name
+        repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
+        echo "$HOME/.worktrees/$repo_name"
+    fi
+}
+
+# ============================================================================
+# Worktree Validation
+# ============================================================================
+
+# Check if we're inside a worktree (not main repo)
+is_inside_worktree() {
+    local git_dir
+    git_dir=$(git rev-parse --git-dir 2>/dev/null)
+
+    # If .git is a file (not directory), we're in a worktree
+    if [[ -f ".git" ]] || [[ "$git_dir" == *".git/worktrees/"* ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# Check if directory is a valid git worktree
+worktree_exists() {
+    local dir="$1"
+    [[ -d "$dir" ]] && [[ -e "$dir/.git" ]]
+}
+
+# Check if working directory is dirty
+is_dirty() {
+    ! git diff --quiet HEAD 2>/dev/null || [[ -n "$(git status --porcelain 2>/dev/null)" ]]
+}
+
+# ============================================================================
+# File Copying
+# ============================================================================
+
+copy_config_files() {
+    local dest_dir="$1"
+    local pattern
+    pattern=$(get_untracked_files_pattern)
+
+    local IFS=$'\n'
+    local files
+    files=$(find_files "$pattern" ".")
+
+    for f in $files; do
+        local dest_file="$dest_dir/$f"
+
+        # Skip if destination already exists
+        if [[ -e "$dest_file" ]]; then
+            warn "Skipping $f (already exists in target)"
+            continue
+        fi
+
+        # Ensure destination directory exists
+        local dest_parent
+        dest_parent=$(dirname "$dest_file")
+        if [[ -n "$DRY_RUN" ]]; then
+            warn "[dry-run] Would copy: $f"
+        else
+            mkdir -p "$dest_parent"
+            if cp_cow "$f" "$dest_file"; then
+                [[ -z "$QUIET" ]] && warn "Copied: $f"
+            else
+                warn "Failed to copy: $f"
+            fi
+        fi
+    done
+
+    unset IFS
+}
+
+copy_node_modules() {
+    local dest_dir="$1"
+
+    # Only copy for pnpm projects
+    if [[ ! -f "pnpm-lock.yaml" ]]; then
+        return 0
+    fi
+
+    # Only copy if node_modules exists
+    if [[ ! -d "node_modules" ]]; then
+        return 0
+    fi
+
+    if [[ -n "$DRY_RUN" ]]; then
+        warn "[dry-run] Would copy node_modules in background"
+        return 0
+    fi
+
+    # Copy in background, fully silent
+    local cp_cmd="cp -Rc node_modules $dest_dir/node_modules 2>/dev/null || \
+                  cp -R --reflink=auto node_modules $dest_dir/node_modules 2>/dev/null || \
+                  cp -R node_modules $dest_dir/node_modules 2>/dev/null"
+
+    nohup bash -c "$cp_cmd" &>/dev/null &
+}
+
+# ============================================================================
+# Post-Creation
+# ============================================================================
+
+init_submodules() {
+    local worktree_dir="$1"
+
+    if [[ ! -f ".gitmodules" ]]; then
+        return 0
+    fi
+
+    if [[ -n "$DRY_RUN" ]]; then
+        warn "[dry-run] Would initialize submodules"
+        return 0
+    fi
+
+    warn "Initializing submodules..."
+    if ! (cd "$worktree_dir" && git submodule update --init --recursive 2>/dev/null); then
+        warn "Failed to initialize submodules"
+    fi
+}
+
+setup_direnv() {
+    local worktree_dir="$1"
+
+    # Only if direnv is available
+    if ! command -v direnv &> /dev/null; then
+        return 0
+    fi
+
+    # Only if .envrc exists in the worktree
+    if [[ ! -f "$worktree_dir/.envrc" ]]; then
+        return 0
+    fi
+
+    if [[ -n "$DRY_RUN" ]]; then
+        warn "[dry-run] Would run: direnv allow $worktree_dir"
+        return 0
+    fi
+
+    direnv allow "$worktree_dir" 2>/dev/null || true
+}
+
+# ============================================================================
+# Commands
+# ============================================================================
+
+cmd_list() {
+    git worktree list
+}
+
+cmd_remove() {
+    if [[ $# -eq 0 ]]; then
+        die "Usage: cwt rm <branch> [<branch>...]"
+    fi
+
+    local git_root
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null) || die "Not in a git repository"
+    cd "$git_root"
+
+    local basedir
+    basedir=$(get_worktree_basedir)
+
+    while [[ $# -gt 0 ]]; do
+        local branch="$1"
+        shift
+
+        # Convert branch name to directory name (replace / with _)
+        local dirname="${branch//\//_}"
+        local dir="$basedir/$dirname"
+
+        if [[ ! -d "$dir" ]]; then
+            warn "Worktree not found: $dir, skipping"
+            continue
+        fi
+
+        if [[ -n "$DRY_RUN" ]]; then
+            warn "[dry-run] Would remove worktree: $dir"
+            warn "[dry-run] Would delete branch: $branch"
+            continue
+        fi
+
+        warn "Removing: $dir"
+
+        # Get branch name from the worktree (in case it differs)
+        local actual_branch
+        actual_branch=$(cd "$dir" && git rev-parse --abbrev-ref HEAD 2>/dev/null) || actual_branch="$branch"
+
+        # Remove the directory
+        rm -rf "$dir"
+
+        # Prune and delete branch from main repo
+        git worktree prune
+        git branch -D "$actual_branch" 2>/dev/null || true
+
+        info "Removed worktree and branch: $actual_branch"
+    done
+}
+
+cmd_create() {
+    local branchname="$1"
+
+    if [[ -z "$branchname" ]]; then
+        usage
+    fi
+
+    [[ -n "$VERBOSE" ]] && set -x
+
+    # Check if running from a worktree
+    if is_inside_worktree; then
+        die "Cannot run from inside a worktree. Run from the main repository."
+    fi
+
+    # Check for dirty working directory
+    if [[ -z "$FORCE" ]] && is_dirty; then
+        die "Working directory is dirty. Use -f to force, or commit/stash changes first."
+    fi
+
+    # Get git root and change to it
+    local git_root
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null) || die "Not in a git repository"
+    cd "$git_root"
+
+    # Get worktree base directory and ensure it exists
+    local basedir
+    basedir=$(get_worktree_basedir)
+
+    # Convert branch name to directory name (replace / with _)
+    local dirname="${branchname//\//_}"
+    local worktree_path="$basedir/$dirname"
+
+    # Ensure base directory exists
+    if [[ -z "$DRY_RUN" ]]; then
+        mkdir -p "$basedir"
+    fi
+
+    # Check if worktree already exists
+    if worktree_exists "$worktree_path"; then
+        info "Worktree already exists, navigating to: $worktree_path"
+        cd "$worktree_path"
+        return 0
+    fi
+
+    # Check if directory exists but isn't a worktree
+    if [[ -d "$worktree_path" ]]; then
+        die "Directory exists but is not a git worktree: $worktree_path"
+    fi
+
+    if [[ -n "$DRY_RUN" ]]; then
+        warn "[dry-run] === Worktree Creation Preview ==="
+        warn "[dry-run] Branch: $branchname"
+        warn "[dry-run] Directory: $worktree_path"
+        if [[ -n "$BASE_BRANCH" ]]; then
+            warn "[dry-run] Base branch: $BASE_BRANCH"
+        fi
+    fi
+
+    # Try to find the branch locally first
+    local branch_exists_locally=
+    local branch_exists_remote=
+
+    if git for-each-ref --format='%(refname:lstrip=2)' refs/heads | grep -qE "^$branchname$"; then
+        branch_exists_locally=1
+    fi
+
+    # If not found locally, fetch and check remote
+    if [[ -z "$branch_exists_locally" ]]; then
+        if [[ -n "$DRY_RUN" ]]; then
+            warn "[dry-run] Would fetch from origin"
+        else
+            warn "Branch not found locally, fetching from origin..."
+            git fetch origin 2>/dev/null || warn "Failed to fetch from origin"
+        fi
+
+        if git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin | grep -qE "^$branchname$"; then
+            branch_exists_remote=1
+        fi
+    fi
+
+    # Create the worktree
+    if [[ -n "$DRY_RUN" ]]; then
+        if [[ -n "$branch_exists_locally" ]]; then
+            warn "[dry-run] Would create worktree from local branch: $branchname"
+        elif [[ -n "$branch_exists_remote" ]]; then
+            warn "[dry-run] Would create worktree tracking origin/$branchname"
+        else
+            local base="${BASE_BRANCH:-HEAD}"
+            warn "[dry-run] Would create new branch '$branchname' from $base"
+        fi
+
+        copy_config_files "$worktree_path"
+        copy_node_modules "$worktree_path"
+        init_submodules "$worktree_path"
+        setup_direnv "$worktree_path"
+
+        warn "[dry-run] Would cd to: $worktree_path"
+        return 0
+    fi
+
+    if [[ -n "$branch_exists_locally" ]]; then
+        # Branch exists locally
+        if ! git worktree add "$worktree_path" "$branchname"; then
+            die "Failed to create worktree for local branch: $branchname"
+        fi
+    elif [[ -n "$branch_exists_remote" ]]; then
+        # Branch exists on remote
+        if ! git worktree add -b "$branchname" "$worktree_path" "origin/$branchname"; then
+            die "Failed to create worktree tracking origin/$branchname"
+        fi
+    else
+        # Create new branch
+        local base_ref="${BASE_BRANCH:-HEAD}"
+        warn "Creating new branch '$branchname' from $base_ref"
+        if ! git worktree add -b "$branchname" "$worktree_path" "$base_ref"; then
+            die "Failed to create new worktree: $branchname"
+        fi
+    fi
+
+    # Copy config files
+    copy_config_files "$worktree_path"
+
+    # Copy node_modules in background
+    copy_node_modules "$worktree_path"
+
+    # Initialize submodules
+    init_submodules "$worktree_path"
+
+    # Setup direnv
+    setup_direnv "$worktree_path"
+
+    # Navigate to the new worktree
+    cd "$worktree_path"
+
+    info "Created worktree: $worktree_path"
+}
+
+# ============================================================================
+# Entry Point
+# ============================================================================
+
+main() {
+    local cmd=""
+    local args=()
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help|help)
+                usage
+                ;;
+            -v|--verbose)
+                VERBOSE=1
+                shift
+                ;;
+            -q|--quiet)
+                QUIET=1
+                shift
+                ;;
+            -f|--force)
+                FORCE=1
+                shift
+                ;;
+            --dry-run)
+                DRY_RUN=1
+                shift
+                ;;
+            -b)
+                if [[ -z "${2:-}" ]]; then
+                    die "-b requires a branch name"
+                fi
+                BASE_BRANCH="$2"
+                shift 2
+                ;;
+            ls|list)
+                cmd="list"
+                shift
+                ;;
+            rm|remove)
+                cmd="remove"
+                shift
+                ;;
+            -*)
+                die "Unknown option: $1"
+                ;;
+            *)
+                if [[ -z "$cmd" ]]; then
+                    cmd="create"
+                fi
+                args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    # Default to showing help if no command
+    if [[ -z "$cmd" ]]; then
+        usage
+    fi
+
+    # Dispatch to command
+    case "$cmd" in
+        list)
+            cmd_list
+            ;;
+        remove)
+            cmd_remove "${args[@]}"
+            ;;
+        create)
+            cmd_create "${args[@]}"
+            ;;
+        *)
+            die "Unknown command: $cmd"
+            ;;
+    esac
+}
+
+main "$@"
