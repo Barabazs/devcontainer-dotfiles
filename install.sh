@@ -47,3 +47,6 @@ chmod +x ~/.local/scripts/*
 
 # Install git-delta
 sh "$SCRIPT_DIR/install-git-delta.sh"
+
+# Install fd (fast find alternative)
+sh "$SCRIPT_DIR/install-fd.sh"
