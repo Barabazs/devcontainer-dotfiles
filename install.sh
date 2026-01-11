@@ -50,3 +50,14 @@ sh "$SCRIPT_DIR/install-git-delta.sh"
 
 # Install fd (fast find alternative)
 sh "$SCRIPT_DIR/install-fd.sh"
+
+# Initialize shared Claude config volume (if mounted at /claude-config)
+if [ -d "/claude-config" ]; then
+    chmod -R 777 /claude-config 2>/dev/null || true
+    # Remove existing .claude if it's a directory (not a symlink)
+    if [ -e "$HOME/.claude" ] && [ ! -L "$HOME/.claude" ]; then
+        rm -rf "$HOME/.claude"
+    fi
+    ln -sfn /claude-config "$HOME/.claude"
+    echo "Claude config: Linked ~/.claude -> /claude-config"
+fi
