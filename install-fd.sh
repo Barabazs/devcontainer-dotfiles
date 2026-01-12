@@ -15,10 +15,14 @@ install_fd() {
             fi
             echo "Downloading $LATEST_URL"
             wget -O /tmp/fd-latest.deb "$LATEST_URL"
-            sudo dpkg -i /tmp/fd-latest.deb
-            rm /tmp/fd-latest.deb
-            echo "Successfully installed fd via dpkg"
-            return 0
+            if sudo dpkg -i /tmp/fd-latest.deb; then
+                rm /tmp/fd-latest.deb
+                echo "Successfully installed fd via dpkg"
+                return 0
+            else
+                echo "dpkg failed (possibly zstd compression not supported), falling back to tarball..."
+                rm -f /tmp/fd-latest.deb
+            fi
         fi
     fi
 
@@ -50,7 +54,7 @@ install_fd() {
     fi
 
     # 5) Fallback: download and install binary tarball
-    echo "No suitable package manager found, installing binary tarball..."
+    echo "Installing from binary tarball..."
 
     # Detect architecture
     ARCH=$(uname -m)
