@@ -71,6 +71,6 @@ __git_complete undo-commit _git_reset
 alias yolo-claude="\claude --dangerously-skip-permissions"
 alias claude="claude-launcher"
 
-alias list-screenshots="find  ~/claude-screenshots -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.jpeg" \) -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2"
+alias list-screenshots="find  /claude-screenshots -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.jpeg" \) -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2"
 alias last-screenshot="list-screenshots | head -n 1"
 
