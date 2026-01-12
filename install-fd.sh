@@ -8,6 +8,11 @@ install_fd() {
         ARCH=$(dpkg --print-architecture) # e.g. "arm64" or "amd64"
         LATEST_URL=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep "browser_download_url.*_${ARCH}\.deb" | grep -v "musl" | head -n 1 | cut -d '"' -f4)
         if [ -n "$LATEST_URL" ]; then
+            # Ensure zstd is installed (needed for newer .deb compression)
+            if ! command -v zstd &>/dev/null; then
+                echo "Installing zstd for .deb extraction..."
+                sudo apt-get update && sudo apt-get install -y zstd
+            fi
             # Remove apt version if installed (conflicts with GitHub release)
             if dpkg -l fd-find &>/dev/null; then
                 echo "Removing old fd-find package..."
@@ -15,14 +20,10 @@ install_fd() {
             fi
             echo "Downloading $LATEST_URL"
             wget -O /tmp/fd-latest.deb "$LATEST_URL"
-            if sudo dpkg -i /tmp/fd-latest.deb; then
-                rm /tmp/fd-latest.deb
-                echo "Successfully installed fd via dpkg"
-                return 0
-            else
-                echo "dpkg failed (possibly zstd compression not supported), falling back to tarball..."
-                rm -f /tmp/fd-latest.deb
-            fi
+            sudo dpkg -i /tmp/fd-latest.deb
+            rm /tmp/fd-latest.deb
+            echo "Successfully installed fd via dpkg"
+            return 0
         fi
     fi
 
