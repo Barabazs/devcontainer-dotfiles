@@ -46,13 +46,13 @@ EOF
 chmod +x ~/.local/scripts/*
 
 # Install git-delta
-sh "$SCRIPT_DIR/install-git-delta.sh"
+sh "$SCRIPT_DIR/installers/install-git-delta.sh"
 
 # Install fd (fast find alternative)
-sh "$SCRIPT_DIR/install-fd.sh"
+sh "$SCRIPT_DIR/installers/install-fd.sh"
 
 # Install lazygit (terminal UI for git)
-sh "$SCRIPT_DIR/install-lazygit.sh"
+sh "$SCRIPT_DIR/installers/install-lazygit.sh"
 
 # Initialize shared Claude config volume (if mounted at /claude-config)
 if [ -d "/claude-config" ]; then
