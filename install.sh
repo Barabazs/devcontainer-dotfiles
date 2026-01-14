@@ -51,6 +51,9 @@ sh "$SCRIPT_DIR/install-git-delta.sh"
 # Install fd (fast find alternative)
 sh "$SCRIPT_DIR/install-fd.sh"
 
+# Install lazygit (terminal UI for git)
+sh "$SCRIPT_DIR/install-lazygit.sh"
+
 # Initialize shared Claude config volume (if mounted at /claude-config)
 if [ -d "/claude-config" ]; then
     chmod -R 777 /claude-config 2>/dev/null || true
