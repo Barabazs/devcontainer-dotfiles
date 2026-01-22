@@ -30,15 +30,15 @@ usage() {
 cwt - Claude Worktree Tool
 
 USAGE:
-    cwt <branch> [-b <base>] [-f] [-v] [-q] [--dry-run]
+    cwt add <branch> [-b <base>] [-f] [-v] [-q] [--dry-run]
     cwt ls
     cwt rm <branch> [<branch>...]
     cwt -h|--help
 
 COMMANDS:
-    <branch>    Create or navigate to a worktree for the given branch
-    ls          List all worktrees (wraps git worktree list)
-    rm          Remove worktree(s) and delete associated branch(es)
+    add <branch>    Create or navigate to a worktree for the given branch
+    ls              List all worktrees (wraps git worktree list)
+    rm              Remove worktree(s) and delete associated branch(es)
 
 OPTIONS:
     -b <base>   Base branch for new branches (default: current HEAD)
@@ -49,10 +49,10 @@ OPTIONS:
     -h, --help      Show this help message
 
 EXAMPLES:
-    cwt feature-login           # Create/navigate to worktree
-    cwt feature-signup -b main  # New branch from main
-    cwt feature-test --dry-run  # Preview what would happen
-    cwt rm feature-login        # Remove worktree and branch
+    cwt add feature-login           # Create/navigate to worktree
+    cwt add feature-signup -b main  # New branch from main
+    cwt add feature-test --dry-run  # Preview what would happen
+    cwt rm feature-login            # Remove worktree and branch
 
 WORKTREE LOCATION:
     Worktrees are created in: ~/.worktrees/<repo-name>/<branch>/
@@ -531,6 +531,10 @@ main() {
                 BASE_BRANCH="$2"
                 shift 2
                 ;;
+            add)
+                cmd="add"
+                shift
+                ;;
             ls|list)
                 cmd="list"
                 shift
@@ -544,7 +548,7 @@ main() {
                 ;;
             *)
                 if [[ -z "$cmd" ]]; then
-                    cmd="create"
+                    die "Unknown command: $1. Use 'cwt add <branch>' to create a worktree."
                 fi
                 args+=("$1")
                 shift
@@ -559,14 +563,14 @@ main() {
 
     # Dispatch to command
     case "$cmd" in
+        add)
+            cmd_create "${args[@]}"
+            ;;
         list)
             cmd_list
             ;;
         remove)
             cmd_remove "${args[@]}"
-            ;;
-        create)
-            cmd_create "${args[@]}"
             ;;
         *)
             die "Unknown command: $cmd"
@@ -592,11 +596,15 @@ _cwt_completion() {
     local words
     _init_completion || return
 
-    local subcommands="ls list rm remove"
+    local subcommands="add ls rm"
     local options="-b -f -v -q --force --verbose --quiet --dry-run -h --help"
 
     case "$prev" in
         -b)
+            mapfile -t COMPREPLY < <(compgen -W "$(_cwt_get_branches)" -- "$cur")
+            return
+            ;;
+        add)
             mapfile -t COMPREPLY < <(compgen -W "$(_cwt_get_branches)" -- "$cur")
             return
             ;;
@@ -609,8 +617,10 @@ _cwt_completion() {
     if [[ "$cur" == -* ]]; then
         mapfile -t COMPREPLY < <(compgen -W "$options" -- "$cur")
     elif [[ $cword -eq 1 ]]; then
-        mapfile -t COMPREPLY < <(compgen -W "$subcommands $(_cwt_get_branches)" -- "$cur")
+        # First arg: only subcommands
+        mapfile -t COMPREPLY < <(compgen -W "$subcommands" -- "$cur")
     else
+        # After subcommand: branches
         mapfile -t COMPREPLY < <(compgen -W "$(_cwt_get_branches)" -- "$cur")
     fi
 }
