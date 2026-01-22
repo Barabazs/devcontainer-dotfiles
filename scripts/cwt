@@ -7,7 +7,7 @@
 #   cwt() { source /path/to/cwt "$@"; }
 
 # Only enable strict mode during execution, not when sourced for completion
-if [[ $# -gt 0 ]]; then
+if [[ -z "${_CWT_INIT:-}" ]]; then
     set -euo pipefail
 fi
 
@@ -631,7 +631,7 @@ _cwt_completion() {
 # Register completion (safe to call multiple times)
 complete -F _cwt_completion cwt 2>/dev/null || true
 
-# Run main only if arguments provided
-if [[ $# -gt 0 ]]; then
+# Run main unless sourced for init only (completion registration)
+if [[ -z "${_CWT_INIT:-}" ]]; then
     main "$@"
 fi
