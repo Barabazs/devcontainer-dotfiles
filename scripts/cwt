@@ -6,7 +6,10 @@
 # Source this script or wrap it in a shell function for auto-cd:
 #   cwt() { source /path/to/cwt "$@"; }
 
-set -euo pipefail
+# Only enable strict mode during execution, not when sourced for completion
+if [[ $# -gt 0 ]]; then
+    set -euo pipefail
+fi
 
 # Colors
 RED="\033[0;31m"
