@@ -574,4 +574,51 @@ main() {
     esac
 }
 
-main "$@"
+# ============================================================================
+# Bash Completion
+# ============================================================================
+
+_cwt_get_branches() {
+    git branch -a 2>/dev/null | sed 's/^[* ]*//' | sed 's|remotes/origin/||' | grep -v '^HEAD ' | sort -u
+}
+
+_cwt_get_worktree_branches() {
+    git worktree list --porcelain 2>/dev/null | sed -n 's|^branch refs/heads/||p'
+}
+
+_cwt_completion() {
+    local cur prev cword
+    # shellcheck disable=SC2034  # words is set by _init_completion
+    local words
+    _init_completion || return
+
+    local subcommands="ls list rm remove"
+    local options="-b -f -v -q --force --verbose --quiet --dry-run -h --help"
+
+    case "$prev" in
+        -b)
+            mapfile -t COMPREPLY < <(compgen -W "$(_cwt_get_branches)" -- "$cur")
+            return
+            ;;
+        rm|remove)
+            mapfile -t COMPREPLY < <(compgen -W "$(_cwt_get_worktree_branches)" -- "$cur")
+            return
+            ;;
+    esac
+
+    if [[ "$cur" == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "$options" -- "$cur")
+    elif [[ $cword -eq 1 ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "$subcommands $(_cwt_get_branches)" -- "$cur")
+    else
+        mapfile -t COMPREPLY < <(compgen -W "$(_cwt_get_branches)" -- "$cur")
+    fi
+}
+
+# Register completion (safe to call multiple times)
+complete -F _cwt_completion cwt 2>/dev/null || true
+
+# Run main only if arguments provided
+if [[ $# -gt 0 ]]; then
+    main "$@"
+fi
