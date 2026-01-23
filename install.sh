@@ -54,6 +54,9 @@ sh "$SCRIPT_DIR/installers/install-fd.sh"
 # Install lazygit (terminal UI for git)
 sh "$SCRIPT_DIR/installers/install-lazygit.sh"
 
+# Install Python CLI tools via uv
+bash "$SCRIPT_DIR/installers/install-python-tools.sh"
+
 # Initialize shared Claude config volume (if mounted at /claude-config)
 if [ -d "/claude-config" ]; then
     chmod -R 777 /claude-config 2>/dev/null || true
