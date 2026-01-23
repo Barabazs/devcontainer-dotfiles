@@ -235,30 +235,22 @@ copy_config_files() {
     unset IFS
 }
 
-copy_node_modules() {
+run_pnpm_install() {
     local dest_dir="$1"
 
-    # Only copy for pnpm projects
+    # Only for pnpm projects
     if [[ ! -f "pnpm-lock.yaml" ]]; then
         return 0
     fi
 
-    # Only copy if node_modules exists
-    if [[ ! -d "node_modules" ]]; then
-        return 0
-    fi
-
     if [[ -n "$DRY_RUN" ]]; then
-        warn "[dry-run] Would copy node_modules in background"
+        warn "[dry-run] Would run 'pnpm install' in background"
         return 0
     fi
 
-    # Copy in background, fully silent
-    local cp_cmd="cp -Rc node_modules $dest_dir/node_modules 2>/dev/null || \
-                  cp -R --reflink=auto node_modules $dest_dir/node_modules 2>/dev/null || \
-                  cp -R node_modules $dest_dir/node_modules 2>/dev/null"
-
-    nohup bash -c "$cp_cmd" &>/dev/null &
+    # Run pnpm install in background
+    # Uses global pnpm store so it's fast (no downloads, just hardlinks)
+    nohup bash -c "cd '$dest_dir' && pnpm install --reporter=silent 2>/dev/null" &>/dev/null &
 }
 
 # ============================================================================
@@ -452,7 +444,7 @@ cmd_create() {
         fi
 
         copy_config_files "$worktree_path"
-        copy_node_modules "$worktree_path"
+        run_pnpm_install "$worktree_path"
         init_submodules "$worktree_path"
         setup_direnv "$worktree_path"
 
@@ -482,8 +474,8 @@ cmd_create() {
     # Copy config files
     copy_config_files "$worktree_path"
 
-    # Copy node_modules in background
-    copy_node_modules "$worktree_path"
+    # Run pnpm install in background (uses global store, fast)
+    run_pnpm_install "$worktree_path"
 
     # Initialize submodules
     init_submodules "$worktree_path"
