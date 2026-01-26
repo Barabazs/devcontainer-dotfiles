@@ -1,0 +1,34 @@
+#!/bin/bash
+# request-copilot-review - Request GitHub Copilot to review a PR
+# Usage: request-copilot-review [pr_number]
+#
+# If no PR number provided, uses the current branch's open PR.
+
+set -euo pipefail
+
+PR_NUMBER="${1:-}"
+
+# Get PR number if not provided
+if [ -z "$PR_NUMBER" ]; then
+  PR_NUMBER=$(gh pr view --json number --jq '.number' 2>/dev/null) || {
+    echo "Error: No PR found for current branch" >&2
+    exit 1
+  }
+fi
+
+# Get repo info
+REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+
+echo "Requesting Copilot review for PR #$PR_NUMBER..."
+
+if gh api "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
+  -X POST \
+  -f 'reviewers[]=copilot-pull-request-reviewer[bot]' > /dev/null 2>&1; then
+  echo "✓ Copilot review requested for https://github.com/$REPO/pull/$PR_NUMBER"
+else
+  echo "Error: Failed to request Copilot review" >&2
+  echo "This may happen if:" >&2
+  echo "  - Copilot reviews aren't enabled for this repo" >&2
+  echo "  - The PR is already reviewed or closed" >&2
+  exit 1
+fi
