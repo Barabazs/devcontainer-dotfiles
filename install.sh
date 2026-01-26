@@ -51,6 +51,9 @@ sh "$SCRIPT_DIR/installers/install-git-delta.sh"
 # Install fd (fast find alternative)
 sh "$SCRIPT_DIR/installers/install-fd.sh"
 
+# Install ripgrep-all (search inside PDFs, archives, etc.)
+sh "$SCRIPT_DIR/installers/install-ripgrep-all.sh"
+
 # Install lazygit (terminal UI for git)
 sh "$SCRIPT_DIR/installers/install-lazygit.sh"
 
