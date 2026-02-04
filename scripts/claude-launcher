@@ -6,6 +6,22 @@ if ! command -v claude >/dev/null 2>&1; then
     exit 1
 fi
 
+# Fix EXDEV errors when CLAUDE_CONFIG_DIR is on a different filesystem (e.g. Docker volume).
+# Plugin install uses os.tmpdir() for staging, then rename() into the plugin cache.
+# rename() fails across filesystem boundaries, so keep TMPDIR on the same volume.
+if [ -d "/claude-config" ]; then
+    mkdir -p /claude-config/tmp
+    export TMPDIR=/claude-config/tmp
+fi
+
+# --yolo flag skips the interactive prompt (used by yolo-claude alias)
+if [ "$1" = "--yolo" ]; then
+    shift
+    echo "Running Claude in YOLO mode..."
+    command claude --dangerously-skip-permissions "$@"
+    exit
+fi
+
 echo "How would you like to run Claude?"
 echo "1) Safe mode (default)"
 echo "2) YOLO mode (--dangerously-skip-permissions)"
@@ -13,7 +29,7 @@ echo "2) YOLO mode (--dangerously-skip-permissions)"
 while true; do
     printf "Enter choice [1/2]: "
     read -r choice
-    
+
     case $choice in
         1|"")
             echo "Running Claude in safe mode..."

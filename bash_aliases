@@ -68,7 +68,7 @@ alias gundo=undo-commit
 __git_complete gundo _git_reset
 __git_complete undo-commit _git_reset
  
-alias yolo-claude="\claude --dangerously-skip-permissions"
+alias yolo-claude="claude-launcher --yolo"
 alias claude="claude-launcher"
 
 # cwt - Claude Worktree Tool (source for completion + wrapper for cd)
