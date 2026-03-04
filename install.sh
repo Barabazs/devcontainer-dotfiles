@@ -26,8 +26,29 @@ for tool in brave-search browser-tools search-tools; do
     fi
 done
 
-# Append to .profile
-cat <<'EOF' >>~/.profile
+# Upsert a managed block between start/end anchors in a file.
+# Usage: upsert_block <file> <content>
+ANCHOR_START='# >>> devcontainer-dotfiles >>>'
+ANCHOR_END='# <<< devcontainer-dotfiles <<<'
+
+upsert_block() {
+    target="$1"
+    content="$2"
+    block="$(printf '%s\n%s\n%s' "$ANCHOR_START" "$content" "$ANCHOR_END")"
+
+    if [ ! -f "$target" ]; then
+        printf '\n%s\n' "$block" >> "$target"
+    elif grep -q "$ANCHOR_START" "$target"; then
+        # Replace existing block
+        sed -i "/$ANCHOR_START/,/$ANCHOR_END/c\\
+$(echo "$block" | sed 's/$/\\/' | sed '$ s/\\$//')" "$target"
+    else
+        printf '\n%s\n' "$block" >> "$target"
+    fi
+}
+
+# Manage .profile block
+upsert_block ~/.profile '
 if [ -d "${HOME}/.local/scripts" ] ; then
     PATH="${HOME}/.local/scripts:$PATH"
 fi
@@ -39,8 +60,11 @@ for tool in brave-search browser-tools search-tools; do
     fi
 done
 
-export TZ=Europe/Berlin
-EOF
+export TZ=Europe/Berlin'
+
+# Manage .bashrc block
+upsert_block ~/.bashrc '# shellcheck source=/dev/null
+[ -f "${HOME}/.local/scripts/motd.sh" ] && . "${HOME}/.local/scripts/motd.sh"'
 
 # chmod the scripts
 chmod +x ~/.local/scripts/*
