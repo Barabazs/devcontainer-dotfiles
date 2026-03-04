@@ -2,7 +2,9 @@
 # MOTD - shown on interactive shell startup in devcontainers
 
 # Only run in interactive shells
-[[ $- != *i* ]] && return 2>/dev/null || exit 0
+if [[ $- != *i* ]]; then
+    return 2>/dev/null || exit 0
+fi
 
 # Colors
 BOLD='\033[1m'
