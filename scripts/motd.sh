@@ -20,12 +20,21 @@ echo -e "${BOLD}${CYAN}devcontainer-dotfiles${RESET} ${DIM}loaded${RESET}"
 # Check gh-token availability
 if command -v gh-token &>/dev/null; then
     echo -e "  ${GREEN}✓${RESET} gh-token installed"
+
+    # Check git credential helper
+    if git config --global credential.helper 2>/dev/null | grep -q "gh-token"; then
+        echo -e "  ${GREEN}✓${RESET} git credential helper configured"
+    else
+        echo -e "  ${YELLOW}✗${RESET} git credential helper not configured"
+        echo -e "    ${DIM}Run: gh-token setup-git${RESET}"
+    fi
 else
     echo -e "  ${YELLOW}✗${RESET} gh-token not installed"
     echo -e "    ${DIM}On the host, run:${RESET}"
     echo -e "    ${DIM}  gh-token --repo barabazs/gh-token${RESET}"
     echo -e "    ${DIM}Then in this container:${RESET}"
-    echo -e "    ${DIM}  uv tool install git+https://<TOKEN>@github.com/barabazs/gh-token.git${RESET}"
+    echo -e "    ${DIM}  uv tool install git+https://x-access-token:<TOKEN>@github.com/barabazs/gh-token.git${RESET}"
+    echo -e "    ${DIM}  gh-token setup-git${RESET}"
 fi
 
 echo ""

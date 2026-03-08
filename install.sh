@@ -66,6 +66,10 @@ export TZ=Europe/Berlin'
 upsert_block ~/.bashrc '# shellcheck source=/dev/null
 [ -f "${HOME}/.local/scripts/motd.sh" ] && . "${HOME}/.local/scripts/motd.sh"'
 
+# Prevent host git credentials (e.g. VS Code GIT_ASKPASS) from being used as fallback.
+# Git auth goes exclusively through the gh-token credential helper (gh-token setup-git).
+export GIT_ASKPASS=/bin/false
+'
 # chmod the scripts
 chmod +x ~/.local/scripts/*
 
