@@ -2,6 +2,12 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Ensure Python stdlib is available (Debian Trixie ships python3-minimal without it)
+if ! python3 -c "import shutil" 2>/dev/null; then
+    echo "Installing Python stdlib (missing in python3-minimal)..."
+    sudo apt-get update -qq && sudo apt-get install -y -qq libpython3-stdlib >/dev/null
+fi
+
 # Copy the dotfiles
 cp gitignore ~/.gitignore
 
