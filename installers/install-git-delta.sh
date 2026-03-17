@@ -9,43 +9,50 @@ install_delta() {
         LATEST_URL=$(curl -s https://api.github.com/repos/dandavison/delta/releases/latest | grep "browser_download_url.*_${ARCH}\.deb" | grep -v "musl" | head -n 1 | cut -d '"' -f4)
         if [ -n "$LATEST_URL" ]; then
             echo "Downloading $LATEST_URL"
-            wget -O /tmp/git-delta-latest.deb "$LATEST_URL"
-            sudo dpkg -i /tmp/git-delta-latest.deb
-            rm /tmp/git-delta-latest.deb
-            echo "Successfully installed git-delta via dpkg"
-            return 0
+            if wget -q -O /tmp/git-delta-latest.deb "$LATEST_URL" &&
+               sudo dpkg -i /tmp/git-delta-latest.deb; then
+                rm -f /tmp/git-delta-latest.deb
+                echo "Successfully installed git-delta via dpkg"
+                return 0
+            fi
+            rm -f /tmp/git-delta-latest.deb
+            echo "dpkg install failed, trying fallback..."
         fi
     fi
 
     # 2) RHEL/Fedora (dnf/yum)
     if command -v dnf &>/dev/null; then
-        sudo dnf install -y git-delta && {
+        if sudo dnf install -y git-delta; then
             echo "Successfully installed git-delta via dnf"
             return 0
-        }
+        fi
     elif command -v yum &>/dev/null; then
-        sudo yum install -y git-delta && {
+        if sudo yum install -y git-delta; then
             echo "Successfully installed git-delta via yum"
             return 0
-        }
+        fi
     fi
 
     # 3) Arch Linux (pacman)
     if command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm git-delta
-        echo "Successfully installed git-delta via pacman"
-        return 0
+        if sudo pacman -S --noconfirm git-delta; then
+            echo "Successfully installed git-delta via pacman"
+            return 0
+        fi
+        echo "pacman install failed, trying fallback..."
     fi
 
-    # 4) macOS (Homebrew)
-    if command -v brew &>/dev/null; then
-        brew install git-delta
-        echo "Successfully installed git-delta via brew"
-        return 0
+    # 4) macOS (Homebrew) — only on macOS to avoid Linuxbrew false positives
+    if [ "$(uname -s)" = "Darwin" ] && command -v brew &>/dev/null; then
+        if brew install git-delta; then
+            echo "Successfully installed git-delta via brew"
+            return 0
+        fi
+        echo "brew install failed, trying fallback..."
     fi
 
     # 5) Fallback: download and install binary tarball
-    echo "No suitable package manager found, installing binary tarball..."
+    echo "Installing from binary tarball..."
 
     # Detect architecture
     ARCH=$(uname -m)
@@ -62,9 +69,9 @@ install_delta() {
         ;;
     esac
 
-    if [ "$OS" == "linux" ]; then
+    if [ "$OS" = "linux" ]; then
         SUFFIX="linux-gnu.tar.gz"
-    elif [ "$OS" == "darwin" ]; then
+    elif [ "$OS" = "darwin" ]; then
         SUFFIX="apple-darwin.tar.gz"
     else
         echo "Unsupported OS: $OS"
@@ -76,18 +83,33 @@ install_delta() {
         head -n1 |
         cut -d '"' -f4)
 
-    if [ -n "$BINARY_URL" ]; then
-        TMP_DIR=$(mktemp -d)
-        wget -O "$TMP_DIR/delta.tar.gz" "$BINARY_URL"
-        tar -xzf "$TMP_DIR/delta.tar.gz" -C "$TMP_DIR"
-        sudo mv "$TMP_DIR"/delta*/delta /usr/local/bin/
-        rm -rf "$TMP_DIR"
-        echo "Successfully installed git-delta binary"
-        return 0
+    if [ -z "$BINARY_URL" ]; then
+        echo "Failed to find download URL for git-delta"
+        return 1
     fi
 
-    echo "Failed to install git-delta"
-    return 1
+    TMP_DIR=$(mktemp -d)
+    if ! wget -q -O "$TMP_DIR/delta.tar.gz" "$BINARY_URL"; then
+        echo "Failed to download git-delta"
+        rm -rf "$TMP_DIR"
+        return 1
+    fi
+
+    if ! tar -xzf "$TMP_DIR/delta.tar.gz" -C "$TMP_DIR"; then
+        echo "Failed to extract git-delta"
+        rm -rf "$TMP_DIR"
+        return 1
+    fi
+
+    if ! sudo mv "$TMP_DIR"/delta*/delta /usr/local/bin/; then
+        echo "Failed to install git-delta binary"
+        rm -rf "$TMP_DIR"
+        return 1
+    fi
+
+    rm -rf "$TMP_DIR"
+    echo "Successfully installed git-delta binary"
+    return 0
 }
 
 # Call the function
