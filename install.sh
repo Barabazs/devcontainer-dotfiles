@@ -64,29 +64,26 @@ export TZ=Europe/Berlin'
 
 # Manage .bashrc block
 upsert_block ~/.bashrc '# shellcheck source=/dev/null
-[ -f "${HOME}/.local/scripts/motd.sh" ] && . "${HOME}/.local/scripts/motd.sh"'
+[ -f "${HOME}/.local/scripts/motd.sh" ] && . "${HOME}/.local/scripts/motd.sh"
 
 # Prevent host git credentials (e.g. VS Code GIT_ASKPASS) from being used as fallback.
 # Git auth goes exclusively through the gh-token credential helper (gh-token setup-git).
-export GIT_ASKPASS=/bin/false
-'
+export GIT_ASKPASS=/bin/false'
 # chmod the scripts
 chmod +x ~/.local/scripts/*
 
-# Install git-delta
-sh "$SCRIPT_DIR/installers/install-git-delta.sh"
-
-# Install fd (fast find alternative)
-sh "$SCRIPT_DIR/installers/install-fd.sh"
-
-# Install ripgrep-all (search inside PDFs, archives, etc.)
-sh "$SCRIPT_DIR/installers/install-ripgrep-all.sh"
-
-# Install lazygit (terminal UI for git)
-sh "$SCRIPT_DIR/installers/install-lazygit.sh"
-
-# Install Python CLI tools via uv
-bash "$SCRIPT_DIR/installers/install-python-tools.sh"
+# Install CLI tools (non-fatal: log failures but continue)
+for installer in \
+    install-git-delta.sh \
+    install-fd.sh \
+    install-ripgrep-all.sh \
+    install-lazygit.sh \
+    install-python-tools.sh \
+; do
+    if ! bash "$SCRIPT_DIR/installers/$installer"; then
+        echo "WARNING: $installer failed" >&2
+    fi
+done
 
 # Initialize shared Claude config volume (if mounted at /claude-config)
 if [ -d "/claude-config" ]; then
