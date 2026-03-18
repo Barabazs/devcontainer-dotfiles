@@ -33,7 +33,7 @@ else
     echo -e "    ${DIM}On the host, run:${RESET}"
     echo -e "    ${DIM}  gh-token --repo barabazs/gh-token${RESET}"
     echo -e "    ${DIM}Then in this container:${RESET}"
-    echo -e "    ${DIM}  read -rsp 'Token: ' T && uv tool install \"git+https://x-access-token:\${T}@github.com/barabazs/gh-token.git\" && gh-token setup-git${RESET}"
+    echo -e "    ${DIM}  read -rsp 'Token: ' T && uv tool install git+https://x-access-token:\${T}@github.com/barabazs/gh-token.git && gh-token setup-git${RESET}"
 fi
 
 echo ""
