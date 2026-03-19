@@ -78,6 +78,20 @@ export GIT_ASKPASS=/bin/false'
 # chmod the scripts
 chmod +x ~/.local/scripts/*
 
+# Configure uv: 7-day dependency cooldown (supply chain protection)
+mkdir -p ~/.config/uv
+cat > ~/.config/uv/uv.toml <<'EOF'
+# 7-day dependency cooldown (supply chain protection)
+# Applies to tool commands (uv run on PEP 723 inline scripts)
+exclude-newer = "1 week"
+EOF
+
+# Configure npm: 7-day dependency cooldown (supply chain protection)
+cat > ~/.npmrc <<'EOF'
+# 7-day dependency cooldown (supply chain protection)
+minimum-release-age=604800000
+EOF
+
 # Install CLI tools (non-fatal: log failures but continue)
 for installer in \
     install-git-delta.sh \
