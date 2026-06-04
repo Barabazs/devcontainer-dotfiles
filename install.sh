@@ -95,6 +95,7 @@ EOF
 # Install CLI tools (non-fatal: log failures but continue)
 for installer in \
     install-git-delta.sh \
+    install-ripgrep.sh \
     install-fd.sh \
     install-ripgrep-all.sh \
     install-lazygit.sh \
