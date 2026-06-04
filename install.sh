@@ -89,7 +89,15 @@ EOF
 # Configure npm: 7-day dependency cooldown (supply chain protection)
 cat > ~/.npmrc <<'EOF'
 # 7-day dependency cooldown (supply chain protection)
-minimum-release-age=10080 # minutes
+min-release-age=7 # days
+EOF
+
+# Configure pnpm: 7-day dependency cooldown (supply chain protection)
+mkdir -p ~/.config/pnpm
+cat > ~/.config/pnpm/config.yaml <<'EOF'
+# 7-day dependency cooldown (supply chain protection)
+minimumReleaseAge: 10080 # minutes
+minimumReleaseAgeStrict: true
 EOF
 
 # Install CLI tools (non-fatal: log failures but continue)
