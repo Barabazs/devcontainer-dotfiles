@@ -69,6 +69,10 @@ __git_complete gundo _git_reset
 __git_complete undo-commit _git_reset
  
 alias yolo-claude="claude-launcher --yolo"
+alias fable="CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1 claude-launcher --yolo --model claude-fable-5"
+alias sonnet="claude-launcher --yolo --model claude-sonnet-5"
+alias opus="claude-launcher --yolo --model claude-opus-5"
+alias opus46="claude-launcher --yolo --model claude-opus-4-6"
 alias claude="claude-launcher"
 
 # cwt - Claude Worktree Tool (source for completion + wrapper for cd)
