@@ -117,6 +117,11 @@ done
 # Initialize shared Claude config volume (if mounted at /claude-config)
 if [ -d "/claude-config" ]; then
     chmod -R 777 /claude-config 2>/dev/null || true
+    # Restore sticky/private bits on the sockets path: uds-messaging (cross-session
+    # messaging) refuses to bind if any component is world-writable without sticky.
+    mkdir -p /claude-config/tmp
+    chmod 1777 /claude-config /claude-config/tmp 2>/dev/null || true
+    chmod 700 /claude-config/tmp/cc-socks 2>/dev/null || true
     # Remove existing .claude if it's a directory (not a symlink)
     if [ -e "$HOME/.claude" ] && [ ! -L "$HOME/.claude" ]; then
         rm -rf "$HOME/.claude"
