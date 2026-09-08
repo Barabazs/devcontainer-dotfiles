@@ -82,6 +82,12 @@ alias claude="claude-launcher"
 _CWT_INIT=1 source ~/.local/scripts/cwt
 cwt() { source ~/.local/scripts/cwt "$@"; }
 
-alias list-screenshots="find  /claude-screenshots -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.jpeg" \) -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2"
-alias last-screenshot="list-screenshots | head -n 1"
+# Functions (not aliases) so they survive Claude Code's per-command `unalias -a`
+list-screenshots() {
+    find /claude-screenshots -type f \( -iname '*.jpg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.jpeg' \) -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-
+}
+
+last-screenshot() {
+    list-screenshots | head -n 1
+}
 
