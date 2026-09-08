@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+"$(dirname "$0")/list-screenshots" | head -n 1
