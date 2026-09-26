@@ -25,7 +25,7 @@ Shared config volume in `devcontainer.json`:
 - `bash_aliases` — git shortcuts with bash-completion, navigation aliases, cwt shell integration
 - `gitignore` — global gitignore template
 - `scripts/` — utility scripts added to PATH
-- `installers/` — multi-platform binary installers (git-delta, fd, ripgrep-all, lazygit, ast-grep, zizmor)
+- `installers/` — multi-platform binary installers (git-delta, fd, ripgrep-all, lazygit, ast-grep, zizmor, shellcheck, bat)
 
 ## Key Technical Details
 
@@ -33,7 +33,7 @@ Shared config volume in `devcontainer.json`:
 - **TMPDIR fix**: `claude-launcher` sets `TMPDIR=/claude-config/tmp` so plugin installs don't fail with EXDEV when config dir is on a different filesystem.
 - **cwt shell integration**: `cwt` must be sourced via a shell function (`cwt() { source ~/.local/scripts/cwt "$@"; }`) — direct execution won't change the working directory. Completion is initialized with `_CWT_INIT=1 source`.
 - **cwt config**: per-repo `git config worktree.basedir` overrides worktree location; `git config --add worktree.untrackedfiles` copies extra files into new worktrees.
-- **Installers**: binary installers detect OS/arch and download latest GitHub release. Python tools (ast-grep, zizmor) install via `uv tool install`.
+- **Installers**: binary installers detect OS/arch and download latest GitHub release. Python tools (ast-grep, zizmor) install via `uv tool install`. shellcheck and bat come from the system package manager (`install-system-packages.sh`; on Debian `bat` is a symlink to `batcat` in `~/.local/bin`).
 
 ## Shell Scripts Conventions
 

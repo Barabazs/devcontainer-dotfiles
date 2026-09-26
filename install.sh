@@ -108,6 +108,7 @@ for installer in \
     install-ripgrep-all.sh \
     install-lazygit.sh \
     install-python-tools.sh \
+    install-system-packages.sh \
 ; do
     if ! bash "$SCRIPT_DIR/installers/$installer"; then
         echo "WARNING: $installer failed" >&2
