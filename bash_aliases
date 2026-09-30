@@ -69,10 +69,8 @@ __git_complete gundo _git_reset
 __git_complete undo-commit _git_reset
  
 alias yolo-claude="claude-launcher --yolo"
-alias fable5="CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1 claude-launcher --yolo --model claude-fable-5"
-alias fable51="CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1 claude-launcher --yolo --model claude-fable-5-1"
-alias fable="fable51"
-alias sonnet="claude-launcher --yolo --model claude-sonnet-5"
+alias fable="CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1 claude-launcher --yolo --model claude-fable-5-1"
+alias sonnet="claude-launcher --yolo --model claude-sonnet-5-5"
 alias opus="CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1 claude-launcher --yolo --model claude-opus-5-5"
 alias opus46="claude-launcher --yolo --model claude-opus-4-6"
 alias claude="claude-launcher"
