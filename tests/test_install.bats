@@ -172,10 +172,11 @@ run_installer() {
 
 # --- Tool configs ---
 
-@test "glow config wraps at terminal width and enables mouse" {
+@test "glow config sets dracula style, terminal width and mouse" {
     run_installer
     grep -qx 'width: 0' "$HOME/.config/glow/glow.yml"
     grep -qx 'mouse: true' "$HOME/.config/glow/glow.yml"
+    grep -qx 'style: "dracula"' "$HOME/.config/glow/glow.yml"
 }
 
 # --- shellcheck ---

@@ -104,8 +104,8 @@ EOF
 # capped at 120 by glow; unlike `-w 0` on the CLI, which disables wrapping)
 mkdir -p ~/.config/glow
 cat > ~/.config/glow/glow.yml <<'EOF'
-# style name or JSON path (default "auto")
-style: "auto"
+# style name or JSON path (pinned dark theme; skips auto light/dark detection)
+style: "dracula"
 # word-wrap at width (0 = terminal width, max 120)
 width: 0
 # mouse wheel scrolling (TUI-mode only; drag-select then needs prefix-[ or Option-drag)
