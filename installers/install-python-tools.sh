@@ -4,6 +4,7 @@
 PYTHON_TOOLS=(
     "ast-grep-cli"   # AST grep CLI tool
     "zizmor"         # Static analysis tool for GitHub Actions
+    "prek"           # Git hook runner (pre-commit drop-in)
 )
 
 install_python_tools() {
