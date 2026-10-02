@@ -100,6 +100,18 @@ minimumReleaseAge: 10080 # minutes
 minimumReleaseAgeStrict: true
 EOF
 
+# Configure glow: wrap at terminal width (config width 0 = terminal width,
+# capped at 120 by glow; unlike `-w 0` on the CLI, which disables wrapping)
+mkdir -p ~/.config/glow
+cat > ~/.config/glow/glow.yml <<'EOF'
+# style name or JSON path (default "auto")
+style: "auto"
+# word-wrap at width (0 = terminal width, max 120)
+width: 0
+# mouse wheel scrolling (TUI-mode only; drag-select then needs prefix-[ or Option-drag)
+mouse: true
+EOF
+
 # Install CLI tools (non-fatal: log failures but continue)
 for installer in \
     install-git-delta.sh \

@@ -170,6 +170,14 @@ run_installer() {
     [[ "$output" != *"not installed"* ]]
 }
 
+# --- Tool configs ---
+
+@test "glow config wraps at terminal width and enables mouse" {
+    run_installer
+    grep -qx 'width: 0' "$HOME/.config/glow/glow.yml"
+    grep -qx 'mouse: true' "$HOME/.config/glow/glow.yml"
+}
+
 # --- shellcheck ---
 
 @test "motd.sh passes shellcheck" {
