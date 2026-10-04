@@ -18,20 +18,6 @@ cp bash_aliases ~/.bash_aliases
 mkdir -p ~/.local
 cp -r scripts ~/.local/
 
-# Install agent-tools (vendored CLI tools for Claude Code)
-# Source: https://github.com/Barabazs/agent-tools (forked from badlogic/agent-tools)
-cd "$SCRIPT_DIR" && git submodule update --init --recursive 2>/dev/null
-mkdir -p ~/.local/agent-tools
-
-for tool in brave-search browser-tools search-tools; do
-    if [ -d "$SCRIPT_DIR/agent-tools/$tool" ]; then
-        cp -r "$SCRIPT_DIR/agent-tools/$tool" ~/.local/agent-tools/
-        cd ~/.local/agent-tools/$tool && pnpm install --silent 2>/dev/null
-        chmod +x ~/.local/agent-tools/$tool/*.js
-        echo "Installed agent-tools ($tool)"
-    fi
-done
-
 # Upsert a managed block between start/end anchors in a file.
 # Usage: upsert_block <file> <content>
 ANCHOR_START='# >>> devcontainer-dotfiles >>>'
@@ -58,13 +44,6 @@ upsert_block ~/.profile '
 if [ -d "${HOME}/.local/scripts" ] ; then
     PATH="${HOME}/.local/scripts:$PATH"
 fi
-
-# Agent tools for Claude Code (web search, browser automation, content extraction)
-for tool in brave-search browser-tools search-tools; do
-    if [ -d "${HOME}/.local/agent-tools/$tool" ] ; then
-        PATH="${PATH}:${HOME}/.local/agent-tools/$tool"
-    fi
-done
 
 export TZ=Europe/Berlin'
 

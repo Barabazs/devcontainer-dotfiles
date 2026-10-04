@@ -17,12 +17,6 @@ setup() {
     for installer in "$WORK_DIR"/installers/*.sh; do
         printf '#!/bin/sh\nexit 0\n' > "$installer"
     done
-
-    # Stub pnpm
-    mkdir -p "$HOME/.stub_bin"
-    printf '#!/bin/sh\nexit 0\n' > "$HOME/.stub_bin/pnpm"
-    chmod +x "$HOME/.stub_bin/pnpm"
-    export PATH="$HOME/.stub_bin:$PATH"
 }
 
 teardown() {
