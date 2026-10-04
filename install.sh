@@ -45,6 +45,10 @@ if [ -d "${HOME}/.local/scripts" ] ; then
     PATH="${HOME}/.local/scripts:$PATH"
 fi
 
+# pnpm global tools (e.g. td); pnpm 11+ links bins into $PNPM_HOME/bin, older into $PNPM_HOME
+export PNPM_HOME="${PNPM_HOME:-${HOME}/.local/share/pnpm}"
+PATH="${PATH}:${PNPM_HOME}/bin:${PNPM_HOME}"
+
 export TZ=Europe/Berlin'
 
 # Manage .bashrc block
@@ -99,6 +103,7 @@ for installer in \
     install-ripgrep-all.sh \
     install-lazygit.sh \
     install-python-tools.sh \
+    install-node-tools.sh \
     install-system-packages.sh \
 ; do
     if ! bash "$SCRIPT_DIR/installers/$installer"; then
