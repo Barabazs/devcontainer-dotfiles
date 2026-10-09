@@ -164,6 +164,43 @@ run_installer() {
     [[ "$output" != *"not installed"* ]]
 }
 
+# --- Git config ---
+
+@test "global gitignore is wired up via core.excludesfile" {
+    run_installer
+    [ "$(git config --global core.excludesfile)" = '~/.gitignore' ]
+    repo="$HOME/repo"
+    git init -q "$repo"
+    touch "$repo/.env"
+    git -C "$repo" check-ignore -q .env
+}
+
+@test "delta is set as git pager when installed" {
+    stub_bin=$(mktemp -d)
+    printf '#!/bin/sh\nexit 0\n' > "$stub_bin/delta"
+    chmod +x "$stub_bin/delta"
+    PATH="$stub_bin:$PATH" run_installer
+    rm -rf "$stub_bin"
+    [ "$(git config --global core.pager)" = "delta" ]
+    [ "$(git config --global interactive.diffFilter)" = "delta --color-only" ]
+}
+
+@test "git pager is left alone when delta is missing" {
+    # PATH with every binary except delta
+    no_delta_bin=$(mktemp -d)
+    for dir in /usr/local/bin /usr/bin; do
+        for f in "$dir"/*; do
+            name=${f##*/}
+            [ "$name" = delta ] && continue
+            [ -e "$no_delta_bin/$name" ] || ln -s "$f" "$no_delta_bin/$name"
+        done
+    done
+    PATH="$no_delta_bin" run_installer
+    rm -rf "$no_delta_bin"
+    run git config --global core.pager
+    [ "$status" -ne 0 ]
+}
+
 # --- Tool configs ---
 
 @test "glow config sets dracula style, terminal width and mouse" {

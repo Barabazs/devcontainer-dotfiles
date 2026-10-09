@@ -29,6 +29,7 @@ Shared config volume in `devcontainer.json`:
 
 ## Key Technical Details
 
+- **Git config**: the devcontainer CLI (`--dotfiles-repository`) doesn't copy the host `~/.gitconfig` like VS Code does, so `install.sh` sets `core.excludesfile=~/.gitignore` (git's default is `~/.config/git/ignore`) and the delta pager. `user.name`/`user.email` are not set here (public repo); they come from the host.
 - **Shared config volume**: Docker named volume at `/claude-config` preserves Claude Code settings across container rebuilds. `install.sh` symlinks `~/.claude` → `/claude-config`.
 - **TMPDIR fix**: `claude-launcher` sets `TMPDIR=/claude-config/tmp` so plugin installs don't fail with EXDEV when config dir is on a different filesystem.
 - **cwt shell integration**: `cwt` must be sourced via a shell function (`cwt() { source ~/.local/scripts/cwt "$@"; }`) — direct execution won't change the working directory. Completion is initialized with `_CWT_INIT=1 source`.

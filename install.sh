@@ -111,6 +111,17 @@ for installer in \
     fi
 done
 
+# Git config. VS Code copies the host ~/.gitconfig into the container; the devcontainer
+# CLI doesn't, so set what this repo provides. Identity (user.name/email) stays host-side.
+# Git only reads ~/.config/git/ignore by default; point it at the copied ~/.gitignore.
+# shellcheck disable=SC2088 # literal ~: git expands it in pathname values
+git config --global core.excludesfile '~/.gitignore'
+if command -v delta >/dev/null 2>&1; then
+    git config --global core.pager delta
+    git config --global interactive.diffFilter 'delta --color-only'
+    git config --global delta.navigate true
+fi
+
 # Initialize shared Claude config volume (if mounted at /claude-config)
 if [ -d "/claude-config" ]; then
     chmod -R 777 /claude-config 2>/dev/null || true
