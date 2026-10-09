@@ -6,6 +6,9 @@ SYSTEM_PACKAGES=(
     "bat"          # cat clone with syntax highlighting
     "glow"         # Markdown renderer for the terminal
 )
+# Same tool, different package name per manager (appended in install_system_packages):
+# the sqlite3 CLI is "sqlite3" on Debian/Ubuntu and "sqlite" on Fedora/RHEL/Arch.
+# macOS ships /usr/bin/sqlite3, so Homebrew adds nothing.
 
 # Install all packages in one go; if that fails (e.g. one package is missing
 # from this distro's repos), retry one by one so the others still get installed.
@@ -21,6 +24,11 @@ pkg_install() {
 }
 
 install_system_packages() {
+    if command -v apt-get &>/dev/null; then
+        SYSTEM_PACKAGES+=("sqlite3")
+    elif command -v dnf &>/dev/null || command -v yum &>/dev/null || command -v pacman &>/dev/null; then
+        SYSTEM_PACKAGES+=("sqlite")
+    fi
     echo "Installing system packages: ${SYSTEM_PACKAGES[*]}..."
     local status=0
 
