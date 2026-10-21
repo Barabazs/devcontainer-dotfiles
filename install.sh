@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Ensure Python stdlib is available (Debian Trixie ships python3-minimal without it)
 if ! python3 -c "import shutil" 2>/dev/null; then
     echo "Installing Python stdlib (missing in python3-minimal)..."
-    sudo apt-get update -qq && sudo apt-get install -y -qq libpython3-stdlib >/dev/null
+    sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends libpython3-stdlib >/dev/null
 fi
 
 # Copy the dotfiles
@@ -65,7 +65,7 @@ chmod +x ~/.local/scripts/*
 mkdir -p ~/.config/uv
 cat > ~/.config/uv/uv.toml <<'EOF'
 # 7-day dependency cooldown (supply chain protection)
-# Applies to tool commands (uv run on PEP 723 inline scripts)
+# Applies to uv tool install (install-python-tools.sh) and uv run on PEP 723 scripts
 exclude-newer = "1 week"
 EOF
 

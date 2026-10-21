@@ -5,7 +5,7 @@ install_ripgrep() {
 
     # 1) Debian/Ubuntu (apt, then GitHub .deb fallback)
     if command -v apt-get &>/dev/null; then
-        if sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep; then
+        if sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends ripgrep; then
             echo "Successfully installed ripgrep via apt"
             return 0
         fi

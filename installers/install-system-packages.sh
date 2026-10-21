@@ -29,12 +29,34 @@ install_system_packages() {
     elif command -v dnf &>/dev/null || command -v yum &>/dev/null || command -v pacman &>/dev/null; then
         SYSTEM_PACKAGES+=("sqlite")
     fi
+
+    # Skip tools already on PATH (e.g. a newer shellcheck in /usr/local/bin from a
+    # devcontainer feature) instead of adding a second, older copy.
+    local pkg cmd missing=()
+    for pkg in "${SYSTEM_PACKAGES[@]}"; do
+        case "$pkg" in
+            sqlite) cmd=sqlite3 ;;
+            *) cmd="$pkg" ;;
+        esac
+        if command -v "$cmd" &>/dev/null; then
+            echo "Skipping $pkg: $(command -v "$cmd") already present"
+        else
+            missing+=("$pkg")
+        fi
+    done
+    SYSTEM_PACKAGES=("${missing[@]}")
+    if [ "${#SYSTEM_PACKAGES[@]}" -eq 0 ]; then
+        echo "All system packages already present."
+        link_bat
+        return 0
+    fi
+
     echo "Installing system packages: ${SYSTEM_PACKAGES[*]}..."
     local status=0
 
     if command -v apt-get &>/dev/null; then
         sudo apt-get update -qq || return 1
-        pkg_install sudo apt-get install -y -qq || status=1
+        pkg_install sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends || status=1
     elif command -v dnf &>/dev/null; then
         pkg_install sudo dnf install -y || status=1
     elif command -v yum &>/dev/null; then
@@ -48,15 +70,19 @@ install_system_packages() {
         return 1
     fi
 
-    # Debian/Ubuntu ship bat as `batcat` (name clash with bacula's `bat`)
+    link_bat
+
+    echo "System packages installation complete."
+    return "$status"
+}
+
+# Debian/Ubuntu ship bat as `batcat` (name clash with bacula's `bat`)
+link_bat() {
     if ! command -v bat &>/dev/null && command -v batcat &>/dev/null; then
         mkdir -p ~/.local/bin
         ln -sf "$(command -v batcat)" ~/.local/bin/bat
         echo "Linked ~/.local/bin/bat -> batcat"
     fi
-
-    echo "System packages installation complete."
-    return "$status"
 }
 
 install_system_packages

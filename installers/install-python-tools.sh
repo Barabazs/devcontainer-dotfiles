@@ -16,6 +16,7 @@ install_python_tools() {
         return 1
     fi
 
+    # 7-day cooldown comes from exclude-newer in ~/.config/uv/uv.toml (written by install.sh)
     for tool in "${PYTHON_TOOLS[@]}"; do
         echo "Installing $tool..."
         if uv tool install "$tool"; then

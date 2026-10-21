@@ -11,12 +11,12 @@ install_fd() {
             # Ensure zstd is installed (needed for newer .deb compression)
             if ! command -v zstd &>/dev/null; then
                 echo "Installing zstd for .deb extraction..."
-                sudo apt-get update && sudo apt-get install -y zstd
+                sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zstd
             fi
             # Remove apt version if installed (conflicts with GitHub release)
             if dpkg -l fd-find &>/dev/null; then
                 echo "Removing old fd-find package..."
-                sudo apt-get remove -y fd-find
+                sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y fd-find
             fi
             echo "Downloading $LATEST_URL"
             if wget -q -O /tmp/fd-latest.deb "$LATEST_URL" &&
