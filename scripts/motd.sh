@@ -3,6 +3,7 @@
 
 # Only run in interactive shells
 if [[ $- != *i* ]]; then
+    # shellcheck disable=SC2317 # exit is reached when executed rather than sourced
     return 2>/dev/null || exit 0
 fi
 

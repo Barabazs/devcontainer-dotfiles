@@ -14,8 +14,7 @@ if [ "$1" = "--help" ] || [[ $# -ne 3 ]]; then
 fi
 
 # Get original comment details
-ORIGINAL=$(gh api repos/:owner/:repo/pulls/comments/$1)
-if [ $? -ne 0 ]; then
+if ! ORIGINAL=$(gh api "repos/:owner/:repo/pulls/comments/$1"); then
     echo "Error: Failed to fetch original comment" >&2
     exit 1
 fi
@@ -25,13 +24,13 @@ FILE_PATH=$(echo "$ORIGINAL" | jq -r '.path')
 LINE=$(echo "$ORIGINAL" | jq -r '.line')
 
 # Reply to the comment
-if gh api repos/:owner/:repo/pulls/$2/comments \
+if gh api repos/:owner/:repo/pulls/"$2"/comments \
     -f body="$3" \
     -f commit_id="$COMMIT_ID" \
     -f path="$FILE_PATH" \
     -F line="$LINE" \
     -f side="RIGHT" \
-    -F in_reply_to=$1 > /dev/null 2>&1; then
+    -F in_reply_to="$1" > /dev/null 2>&1; then
     echo "Reply posted successfully"
     exit 0
 else

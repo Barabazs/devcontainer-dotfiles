@@ -40,6 +40,7 @@ $(echo "$block" | sed 's/$/\\/' | sed '$ s/\\$//')" "$target"
 }
 
 # Manage .profile block
+# shellcheck disable=SC2016 # literal $VARs: expanded when .profile is sourced
 upsert_block ~/.profile '
 if [ -d "${HOME}/.local/scripts" ] ; then
     PATH="${HOME}/.local/scripts:$PATH"
@@ -52,6 +53,7 @@ PATH="${PATH}:${PNPM_HOME}/bin:${PNPM_HOME}"
 export TZ=Europe/Berlin'
 
 # Manage .bashrc block
+# shellcheck disable=SC2016 # literal $VARs: expanded when .bashrc is sourced
 upsert_block ~/.bashrc '# shellcheck source=/dev/null
 [ -f "${HOME}/.local/scripts/motd.sh" ] && . "${HOME}/.local/scripts/motd.sh"
 
