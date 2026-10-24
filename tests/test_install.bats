@@ -164,6 +164,54 @@ run_installer() {
     [[ "$output" != *"not installed"* ]]
 }
 
+# Runs the real motd.sh as an interactive shell with only stub_bin + system dirs on PATH
+run_motd() {
+    run env PATH="$stub_bin:/usr/bin:/bin" bash --norc -i "$HOME/.local/scripts/motd.sh"
+}
+
+stub() { # stub <name> [script body]
+    printf '#!/bin/sh\n%s\n' "${2:-exit 0}" > "$stub_bin/$1"
+    chmod +x "$stub_bin/$1"
+}
+
+@test "motd.sh shows td installed when td is on PATH" {
+    run_installer
+    stub_bin="$HOME/.fake_bin"; mkdir -p "$stub_bin"
+    stub td
+    run_motd
+    [[ "$output" == *"✓"*"td installed"* ]]
+    [[ "$output" != *"td not installed"* ]]
+}
+
+@test "motd.sh points to the node feature when pnpm is missing" {
+    run_installer
+    stub_bin="$HOME/.fake_bin"; mkdir -p "$stub_bin"
+    run_motd
+    [[ "$output" == *"td not installed: no Node/pnpm"* ]]
+    [[ "$output" == *'"ghcr.io/devcontainers/features/node:2": {}'* ]]
+}
+
+@test "motd.sh flags Node older than 24 when td is missing" {
+    run_installer
+    stub_bin="$HOME/.fake_bin"; mkdir -p "$stub_bin"
+    stub pnpm
+    stub node 'case "$1" in -p) echo 22 ;; -v) echo v22.23.4 ;; esac'
+    run_motd
+    [[ "$output" == *"needs Node >= 24, this container has v22.23.4"* ]]
+    [[ "$output" != *"pnpm add -g"* ]]
+}
+
+@test "motd.sh suggests the pnpm install when pnpm and Node 24 are present" {
+    run_installer
+    stub_bin="$HOME/.fake_bin"; mkdir -p "$stub_bin"
+    stub pnpm
+    stub node 'case "$1" in -p) echo 24 ;; -v) echo v24.22.1 ;; esac'
+    run_motd
+    [[ "$output" == *"td not installed"* ]]
+    [[ "$output" == *"pnpm add -g --config.minimum-release-age=10080 @doist/todoist-cli"* ]]
+    [[ "$output" != *"needs Node"* ]]
+}
+
 # --- Git config ---
 
 @test "global gitignore is wired up via core.excludesfile" {

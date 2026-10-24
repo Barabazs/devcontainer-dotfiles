@@ -9,8 +9,8 @@ install_node_tools() {
     echo "Installing Node tools via pnpm..."
 
     if ! command -v pnpm &>/dev/null; then
-        echo "Error: pnpm is not installed. Please install pnpm first."
-        echo "  corepack enable pnpm"
+        echo "Error: pnpm is not installed. Add the Node feature to devcontainer.json:"
+        echo '  "ghcr.io/devcontainers/features/node:2": {}'
         return 1
     fi
 

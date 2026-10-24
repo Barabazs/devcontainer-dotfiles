@@ -45,4 +45,20 @@ else
     echo -e "    ${DIM}  read -rsp 'Token: ' T && uv tool install git+https://x-access-token:\${T}@github.com/barabazs/gh-token.git && gh-token setup-git && gh-token setup-gh${RESET}"
 fi
 
+# Check td (todoist-cli): install-node-tools.sh skips it without pnpm, and its
+# warning only lands in the container creation log
+if command -v td &>/dev/null; then
+    echo -e "  ${GREEN}✓${RESET} td installed"
+elif ! command -v pnpm &>/dev/null; then
+    echo -e "  ${YELLOW}✗${RESET} td not installed: no Node/pnpm in this container"
+    echo -e "    ${DIM}Add to devcontainer.json features, then rebuild:${RESET}"
+    echo -e "    ${DIM}  \"ghcr.io/devcontainers/features/node:2\": {}${RESET}"
+elif node_major=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null) && [ "$node_major" -lt 24 ] 2>/dev/null; then
+    echo -e "  ${YELLOW}✗${RESET} td not installed: needs Node >= 24, this container has $(node -v)"
+    echo -e "    ${DIM}Set \"version\": \"24\" on the node feature in devcontainer.json, then rebuild${RESET}"
+else
+    echo -e "  ${YELLOW}✗${RESET} td not installed"
+    echo -e "    ${DIM}Run: pnpm add -g --config.minimum-release-age=10080 @doist/todoist-cli </dev/null${RESET}"
+fi
+
 echo ""

@@ -9,6 +9,7 @@ Shared dotfiles and utilities for Claude Code devcontainers. Provides installati
 - `./install.sh` — main entry point; copies dotfiles, installs tools, sets up PATH and shared config volume
 - Supports Linux (Debian/RHEL/Arch) and macOS (Homebrew)
 - Scripts install to `~/.local/scripts/`
+- Runtimes come from devcontainer features, not from here: Node >= 24 with pnpm (`ghcr.io/devcontainers/features/node`) and uv (see README). Installers skip their tools without them; `scripts/motd.sh` reports a missing `td` with the fix, since installer warnings only reach the creation log
 
 Shared config volume in `devcontainer.json`:
 
